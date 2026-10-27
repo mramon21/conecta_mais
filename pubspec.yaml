@@ -1,0 +1,30 @@
+name: conecta_mais
+description: "A new Flutter project."
+publish_to: 'none'
+version: 0.1.0+1
+
+environment:
+  sdk: ^3.13.0
+
+dependencies:
+  cached_network_image: ^4.0.5
+  carousel_slider: ^5.1.2
+  cloud_firestore: ^7.0.0
+  firebase_auth: ^7.0.0
+  firebase_core: ^5.0.0
+  firebase_storage: ^14.0.0
+  flutter:
+    sdk: flutter
+  image_picker: ^1.2.3
+  intl: ^0.20.3
+  provider: ^6.1.5+1
+  share_plus: ^13.3.1
+  url_launcher: ^6.3.3
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^6.0.0
+
+flutter:
+  uses-material-design: true

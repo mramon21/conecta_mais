@@ -1,0 +1,119 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    match /users/{userId} {
+      allow create: if request.auth != null && request.auth.uid == userId
+        && request.resource.data.isOrganizer == false;
+      allow read: if request.auth != null && request.auth.uid == userId;
+      allow update: if request.auth != null
+        && request.auth.uid == userId
+        && (
+          (
+            request.resource.data.get('isOrganizer', false)
+              == resource.data.get('isOrganizer', false)
+            && request.resource.data.get('solicitacaoOrganizador', false)
+              == resource.data.get('solicitacaoOrganizador', false)
+            && request.resource.data.diff(resource.data).affectedKeys()
+              .hasOnly(['nome', 'photoUrl', 'email'])
+          )
+          ||
+          (
+            request.resource.data.isOrganizer == true
+            && request.resource.data.solicitacaoOrganizador == false
+            && request.resource.data.diff(resource.data).affectedKeys()
+              .hasOnly([
+                'documento',
+                'nomeInstituicao',
+                'solicitacaoOrganizador',
+                'isOrganizer'
+              ])
+          )
+        );
+    }
+
+    match /eventos/{eventId} {
+      allow read: if true;
+      allow create: if request.auth != null
+        && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.isOrganizer == true
+        && request.resource.data.ownerId == request.auth.uid
+        && request.resource.data.keys().hasOnly([
+          'nomeEvento', 'descricaoEvento', 'dataHoraEvento', 'localEvento',
+          'enderecoEvento',
+          'valorIngresso', 'tipoEvento', 'imagemEvento', 'vagasTotal',
+          'vagasOcupadas', 'ownerId'
+        ])
+        && request.resource.data.dataHoraEvento is timestamp
+        && request.resource.data.dataHoraEvento > request.time
+        && request.resource.data.valorIngresso >= 0
+        && (request.resource.data.vagasTotal == null
+          || request.resource.data.vagasTotal > 0)
+        && request.resource.data.vagasOcupadas == 0;
+      allow update: if request.auth != null && (
+        (resource.data.ownerId == request.auth.uid
+          && request.resource.data.ownerId == resource.data.ownerId
+          && request.resource.data.dataHoraEvento is timestamp
+          && request.resource.data.dataHoraEvento > request.time
+          && request.resource.data.valorIngresso >= 0
+          && (request.resource.data.vagasTotal == null
+            || (request.resource.data.vagasTotal > 0
+              && request.resource.data.vagasTotal >= resource.data.vagasOcupadas))
+          && request.resource.data.diff(resource.data).affectedKeys()
+            .hasOnly(['nomeEvento', 'descricaoEvento', 'dataHoraEvento',
+              'localEvento', 'enderecoEvento', 'valorIngresso', 'tipoEvento', 'imagemEvento',
+              'vagasTotal']))
+        ||
+        (request.resource.data.diff(resource.data).affectedKeys()
+            .hasOnly(['vagasOcupadas'])
+          && request.resource.data.vagasOcupadas
+            == resource.data.get(
+              'vagasOcupadas',
+              resource.data.get('participantesIds', []).size()
+            ) + 1
+          && existsAfter(/databases/$(database)/documents/eventos/$(eventId)/participantes/$(request.auth.uid))
+          && !exists(/databases/$(database)/documents/eventos/$(eventId)/participantes/$(request.auth.uid)))
+      );
+      allow delete: if request.auth != null && resource.data.ownerId == request.auth.uid;
+
+      match /participantes/{userId} {
+        allow read: if request.auth != null && (
+          request.auth.uid == userId
+          || get(/databases/$(database)/documents/eventos/$(eventId)).data.ownerId == request.auth.uid
+        );
+        allow create: if request.auth != null
+          && request.auth.uid == userId
+          && !exists(/databases/$(database)/documents/eventos/$(eventId)/participantes/$(userId))
+          && (
+            (get(/databases/$(database)/documents/eventos/$(eventId)).data.dataHoraEvento is timestamp
+              && get(/databases/$(database)/documents/eventos/$(eventId)).data.dataHoraEvento > request.time)
+            || get(/databases/$(database)/documents/eventos/$(eventId)).data.dataHoraEvento is string
+          )
+          && (get(/databases/$(database)/documents/eventos/$(eventId)).data.vagasTotal == null
+            || get(/databases/$(database)/documents/eventos/$(eventId)).data.get(
+              'vagasOcupadas',
+              get(/databases/$(database)/documents/eventos/$(eventId)).data.get(
+                'participantesIds',
+                []
+              ).size()
+            )
+              < get(/databases/$(database)/documents/eventos/$(eventId)).data.vagasTotal)
+          && getAfter(/databases/$(database)/documents/eventos/$(eventId)).data.vagasOcupadas
+            == get(/databases/$(database)/documents/eventos/$(eventId)).data.get(
+              'vagasOcupadas',
+              get(/databases/$(database)/documents/eventos/$(eventId)).data.get(
+                'participantesIds',
+                []
+              ).size()
+            ) + 1
+          && request.resource.data.uid == userId;
+        allow update: if false;
+        allow delete: if request.auth != null
+          && get(/databases/$(database)/documents/eventos/$(eventId)).data.ownerId == request.auth.uid;
+      }
+    }
+
+    match /{path=**}/participantes/{participantId} {
+      allow read: if request.auth != null
+        && resource.data.uid == request.auth.uid;
+    }
+  }
+}

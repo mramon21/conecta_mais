@@ -1,0 +1,29 @@
+{
+  "firestore": {
+    "rules": "firebase/firestore.rules"
+  },
+  "storage": {
+    "rules": "firebase/storage.rules"
+  },
+  "flutter": {
+    "platforms": {
+      "android": {
+        "default": {
+          "projectId": "conecta-mais-3e519",
+          "appId": "1:740234324402:android:404622b7e6128beb769cab",
+          "fileOutput": "android/app/google-services.json"
+        }
+      },
+      "dart": {
+        "lib/firebase_options.dart": {
+          "projectId": "conecta-mais-3e519",
+          "configurations": {
+            "android": "1:740234324402:android:404622b7e6128beb769cab",
+            "web": "1:740234324402:web:eeffe23c26e7a4bb769cab",
+            "windows": "1:740234324402:web:617c73939c318198769cab"
+          }
+        }
+      }
+    }
+  }
+}}

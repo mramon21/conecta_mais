@@ -1,0 +1,39 @@
+{
+  "project_info": {
+    "project_number": "740234324402",
+    "project_id": "conecta-mais-3e519",
+    "storage_bucket": "conecta-mais-3e519.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:740234324402:android:404622b7e6128beb769cab",
+        "android_client_info": {
+          "package_name": "com.example.conecta_mais"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "740234324402-9i04e9h0lkcq7hgm47uc21a16va87jok.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyAtO2a4PaUspuazXZU1UxjuQI0TEDQz9cI"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "740234324402-9i04e9h0lkcq7hgm47uc21a16va87jok.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
