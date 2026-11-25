@@ -1,7 +1,13 @@
+import 'dart:typed_data';
+
+import 'package:cached_network_image/cached_network_image.dart';
 import 'package:conecta_mais/models/event_category.dart';
 import 'package:conecta_mais/providers/evento_provider.dart';
 import 'package:conecta_mais/screens/models/evento.dart';
+import 'package:conecta_mais/screens/pages/map_location_picker_page.dart';
 import 'package:flutter/material.dart';
+import 'package:image_picker/image_picker.dart';
+import 'package:latlong2/latlong.dart';
 import 'package:provider/provider.dart';
 
 class EditEventPage extends StatefulWidget {
@@ -23,6 +29,10 @@ class _EditEventPageState extends State<EditEventPage> {
   late DateTime _data;
   late TimeOfDay _hora;
   late String _categoria;
+  Uint8List? _imagemSelecionada;
+  String? _imagemContentType;
+  double? _latitude;
+  double? _longitude;
   bool _loading = false;
 
   @override
@@ -40,6 +50,10 @@ class _EditEventPageState extends State<EditEventPage> {
     _data = evento.dataHoraEvento;
     _hora = TimeOfDay.fromDateTime(evento.dataHoraEvento);
     _categoria = evento.tipoEvento;
+    if (evento.temCoordenadas) {
+      _latitude = evento.latitude;
+      _longitude = evento.longitude;
+    }
   }
 
   @override
@@ -53,8 +67,30 @@ class _EditEventPageState extends State<EditEventPage> {
     super.dispose();
   }
 
+  Future<void> _selecionarImagem() async {
+    try {
+      final imagem = await ImagePicker().pickImage(
+        source: ImageSource.gallery,
+        imageQuality: 85,
+      );
+      if (imagem == null) return;
+      final bytes = await imagem.readAsBytes();
+      if (!mounted) return;
+      setState(() {
+        _imagemSelecionada = bytes;
+        _imagemContentType = imagem.mimeType;
+      });
+    } catch (error) {
+      if (mounted) _message('Não foi possível selecionar o banner: $error');
+    }
+  }
+
   Future<void> _salvar() async {
     if (!_formKey.currentState!.validate()) return;
+    if (_latitude == null || _longitude == null) {
+      _message('Marque a localização do evento no mapa.');
+      return;
+    }
     final vagas = int.parse(_vagas.text);
     if (vagas < widget.evento.vagasOcupadas) {
       _message(
@@ -74,29 +110,44 @@ class _EditEventPageState extends State<EditEventPage> {
       return;
     }
     setState(() => _loading = true);
-    final erro = await context.read<EventoProvider>().atualizarEvento(
-      Evento(
-        id: widget.evento.id,
-        ownerId: widget.evento.ownerId,
-        nomeEvento: _nome.text.trim(),
-        descricaoEvento: _descricao.text.trim(),
-        localEvento: _local.text.trim(),
-        enderecoEvento: _endereco.text.trim(),
-        dataHoraEvento: dataHora,
-        valorIngresso: double.parse(_preco.text.replaceAll(',', '.')),
-        tipoEvento: _categoria,
-        imagemEvento: widget.evento.imagemEvento,
-        vagasTotal: vagas,
-        vagasOcupadasCount: widget.evento.vagasOcupadas,
-      ),
-    );
-    if (!mounted) return;
-    setState(() => _loading = false);
-    if (erro != null) {
-      _message(erro);
-      return;
+    try {
+      final provider = context.read<EventoProvider>();
+      final imagemUrl = _imagemSelecionada == null
+          ? widget.evento.imagemEvento
+          : await provider.uploadImagem(
+              _imagemSelecionada!,
+              contentType: _imagemContentType,
+            );
+      final erro = await provider.atualizarEvento(
+        Evento(
+          id: widget.evento.id,
+          ownerId: widget.evento.ownerId,
+          isPrivate: widget.evento.isPrivate,
+          nomeEvento: _nome.text.trim(),
+          descricaoEvento: _descricao.text.trim(),
+          localEvento: _local.text.trim(),
+          enderecoEvento: _endereco.text.trim(),
+          dataHoraEvento: dataHora,
+          valorIngresso: double.parse(_preco.text.replaceAll(',', '.')),
+          tipoEvento: _categoria,
+          imagemEvento: imagemUrl,
+          latitude: _latitude,
+          longitude: _longitude,
+          vagasTotal: vagas,
+          vagasOcupadasCount: widget.evento.vagasOcupadas,
+        ),
+      );
+      if (!mounted) return;
+      if (erro != null) {
+        _message(erro);
+        return;
+      }
+      Navigator.pop(context);
+    } catch (error) {
+      if (mounted) _message('Não foi possível salvar as alterações: $error');
+    } finally {
+      if (mounted) setState(() => _loading = false);
     }
-    Navigator.pop(context);
   }
 
   void _message(String text) => ScaffoldMessenger.of(context)
@@ -122,15 +173,94 @@ class _EditEventPageState extends State<EditEventPage> {
     if (hora != null && mounted) setState(() => _hora = hora);
   }
 
+  Future<void> _selecionarLocalizacao() async {
+    final location = await Navigator.push<LatLng>(
+      context,
+      MaterialPageRoute(
+        builder: (_) =>
+            MapLocationPickerPage(latitude: _latitude, longitude: _longitude),
+      ),
+    );
+    if (location != null && mounted) {
+      setState(() {
+        _latitude = location.latitude;
+        _longitude = location.longitude;
+      });
+    }
+  }
+
   @override
   Widget build(BuildContext context) => Scaffold(
     appBar: AppBar(title: const Text('Editar evento')),
     body: Form(
       key: _formKey,
       child: SingleChildScrollView(
-        padding: const EdgeInsets.all(24),
+        padding: const EdgeInsets.fromLTRB(20, 20, 20, 28),
         child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
+            Align(
+              alignment: Alignment.centerLeft,
+              child: Text(
+                'Banner do evento',
+                style: Theme.of(context).textTheme.titleSmall
+                    ?.copyWith(fontWeight: FontWeight.bold),
+              ),
+            ),
+            const SizedBox(height: 8),
+            InkWell(
+              onTap: _loading ? null : _selecionarImagem,
+              borderRadius: BorderRadius.circular(12),
+              child: Container(
+                height: 180,
+                decoration: BoxDecoration(
+                  border: Border.all(
+                    color: Theme.of(context).colorScheme.outline,
+                  ),
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                clipBehavior: Clip.antiAlias,
+                child: Stack(
+                  fit: StackFit.expand,
+                  children: [
+                    if (_imagemSelecionada != null)
+                      Image.memory(_imagemSelecionada!, fit: BoxFit.cover)
+                    else if (widget.evento.imagemEvento?.isNotEmpty == true)
+                      CachedNetworkImage(
+                        imageUrl: widget.evento.imagemEvento!,
+                        fit: BoxFit.cover,
+                        placeholder: (_, _) =>
+                            const Center(child: CircularProgressIndicator()),
+                        errorWidget: (_, _, _) => const Center(
+                          child: Icon(Icons.broken_image_outlined, size: 40),
+                        ),
+                      )
+                    else
+                      const Center(
+                        child: Icon(
+                          Icons.add_photo_alternate_outlined,
+                          size: 48,
+                        ),
+                      ),
+                    Positioned(
+                      right: 8,
+                      bottom: 8,
+                      child: FilledButton.tonalIcon(
+                        onPressed: _loading ? null : _selecionarImagem,
+                        icon: const Icon(Icons.photo_library_outlined),
+                        label: Text(
+                          _imagemSelecionada != null ||
+                                  widget.evento.imagemEvento?.isNotEmpty == true
+                              ? 'Trocar banner'
+                              : 'Selecionar banner',
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+            const SizedBox(height: 20),
             TextFormField(
               controller: _nome,
               decoration: const InputDecoration(labelText: 'Nome do evento'),
@@ -138,6 +268,7 @@ class _EditEventPageState extends State<EditEventPage> {
                   ? 'Informe um nome válido.'
                   : null,
             ),
+            const SizedBox(height: 16),
             TextFormField(
               controller: _descricao,
               maxLines: 4,
@@ -146,6 +277,7 @@ class _EditEventPageState extends State<EditEventPage> {
                   ? 'Informe uma descrição válida.'
                   : null,
             ),
+            const SizedBox(height: 16),
             TextFormField(
               controller: _local,
               decoration: const InputDecoration(labelText: 'Local'),
@@ -153,6 +285,7 @@ class _EditEventPageState extends State<EditEventPage> {
                   ? 'Informe um local válido.'
                   : null,
             ),
+            const SizedBox(height: 16),
             TextFormField(
               controller: _endereco,
               textCapitalization: TextCapitalization.sentences,
@@ -161,6 +294,19 @@ class _EditEventPageState extends State<EditEventPage> {
                   ? 'Informe o endereço completo do evento.'
                   : null,
             ),
+            const SizedBox(height: 12),
+            OutlinedButton.icon(
+              onPressed: _loading ? null : _selecionarLocalizacao,
+              icon: const Icon(Icons.map_outlined),
+              label: Text(
+                _latitude == null || _longitude == null
+                    ? 'Marcar localização no mapa'
+                    : 'Localização marcada: '
+                          '${_latitude!.toStringAsFixed(5)}, '
+                          '${_longitude!.toStringAsFixed(5)}',
+              ),
+            ),
+            const SizedBox(height: 16),
             DropdownButtonFormField<String>(
               initialValue: _categoria,
               items: EventCategory.values
@@ -172,6 +318,7 @@ class _EditEventPageState extends State<EditEventPage> {
               onChanged: (v) => setState(() => _categoria = v!),
               decoration: const InputDecoration(labelText: 'Categoria'),
             ),
+            const SizedBox(height: 8),
             Row(
               children: [
                 Expanded(
@@ -190,6 +337,7 @@ class _EditEventPageState extends State<EditEventPage> {
                 ),
               ],
             ),
+            const SizedBox(height: 8),
             TextFormField(
               controller: _preco,
               keyboardType: const TextInputType.numberWithOptions(
@@ -203,6 +351,7 @@ class _EditEventPageState extends State<EditEventPage> {
                     : null;
               },
             ),
+            const SizedBox(height: 16),
             TextFormField(
               controller: _vagas,
               keyboardType: TextInputType.number,

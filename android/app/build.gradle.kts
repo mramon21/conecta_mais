@@ -52,12 +52,15 @@ android {
     }
 
     buildTypes {
-        release {
-            if (signingPropertiesFile.exists()) {
-                signingConfig = signingConfigs.getByName("release")
-            }
-        }
+    release {
+        // Sintaxe correta para Kotlin DSL (com '=' e parênteses)
+        signingConfig = signingConfigs.getByName("debug")
+        
+        isMinifyEnabled = true
+        isShrinkResources = true
     }
+}
+
 }
 
 tasks.configureEach {

@@ -72,24 +72,29 @@ class _LoginPageState extends State<LoginPage> {
 
   @override
   Widget build(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
     return Scaffold(
-      backgroundColor: const Color(0xFF060226),
       body: SafeArea(
         child: Center(
           child: SingleChildScrollView(
-            padding: const EdgeInsets.all(40.0),
+            padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 32),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const Row(
+                Wrap(
+                  crossAxisAlignment: WrapCrossAlignment.center,
                   children: [
-                    Icon(Icons.calendar_month, size: 40, color: Colors.white),
+                    Icon(
+                      Icons.calendar_month,
+                      size: 40,
+                      color: colorScheme.onSurface,
+                    ),
                     SizedBox(width: 8),
                     Text(
                       'Conecta+',
                       style: TextStyle(
                         fontSize: 32,
-                        color: Color(0xFF9E77ED),
+                        color: colorScheme.primary,
                         fontWeight: FontWeight.bold,
                       ),
                     ),
@@ -98,10 +103,10 @@ class _LoginPageState extends State<LoginPage> {
 
                 const SizedBox(height: 32),
 
-                const Text(
+                Text(
                   'Bem-vindo de volta',
                   style: TextStyle(
-                    color: Colors.white,
+                    color: colorScheme.onSurface,
                     fontSize: 24,
                     fontWeight: FontWeight.bold,
                   ),
@@ -112,15 +117,16 @@ class _LoginPageState extends State<LoginPage> {
                 Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    const Text(
+                    Text(
                       'Entre na sua conta para continuar',
-                      style: TextStyle(color: Colors.white),
+                      style: TextStyle(color: colorScheme.onSurface),
                     ),
 
                     const SizedBox(height: 10),
 
-                    Reutilizaveis.buildLabel('E-mail'),
+                    Reutilizaveis.buildLabel(context, 'E-mail'),
                     Reutilizaveis.buildTextField(
+                      context: context,
                       hintText: 'seuemail@mail.com',
                       icon: Icons.email,
                       controller: emailController,
@@ -128,8 +134,9 @@ class _LoginPageState extends State<LoginPage> {
 
                     const SizedBox(height: 10),
 
-                    Reutilizaveis.buildLabel('Senha'),
+                    Reutilizaveis.buildLabel(context, 'Senha'),
                     Reutilizaveis.buildTextField(
+                      context: context,
                       controller: passwordController,
                       hintText: '********',
                       icon: Icons.lock,
@@ -138,69 +145,70 @@ class _LoginPageState extends State<LoginPage> {
 
                     const SizedBox(height: 10),
 
-                    Row(
-                      children: [
-                        Checkbox(
-                          value: isChecked,
-                          onChanged: (bool? newValue) {
-                            setState(() {
-                              isChecked = newValue ?? false;
-                            });
-                          },
-                        ),
+                    CheckboxListTile(
+                      contentPadding: EdgeInsets.zero,
+                      controlAffinity: ListTileControlAffinity.leading,
+                      value: isChecked,
+                      onChanged: (newValue) {
+                        setState(() => isChecked = newValue ?? false);
+                      },
+                      title: Text(
+                        'Lembrar de mim',
+                        style: TextStyle(color: colorScheme.onSurface),
+                      ),
+                    ),
 
-                        const Text(
-                          'Lembrar de mim',
-                          style: TextStyle(color: Colors.white),
+                    Align(
+                      alignment: Alignment.centerRight,
+                      child: TextButton(
+                        onPressed: () {
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (context) => const ForgotPasswordPage(),
+                            ),
+                          );
+                        },
+                        child: const Text(
+                          'Esqueceu a senha?',
+                          style: TextStyle(fontWeight: FontWeight.bold),
                         ),
-
-                        const Spacer(),
-
-                        TextButton(
-                          onPressed: () {
-                            Navigator.push(
-                              context,
-                              MaterialPageRoute(
-                                builder: (context) =>
-                                    const ForgotPasswordPage(),
-                              ),
-                            );
-                          },
-                          child: const Text(
-                            'Esqueceu a senha?',
-                            style: TextStyle(fontWeight: FontWeight.bold),
-                          ),
-                        ),
-                      ],
+                      ),
                     ),
                     SizedBox(
                       width: double.infinity,
                       child: ElevatedButton(
                         onPressed: _isLoading ? null : _handleLogin,
                         style: ElevatedButton.styleFrom(
-                          backgroundColor: Colors.purple,
+                          backgroundColor: colorScheme.primary,
+                          foregroundColor: colorScheme.onPrimary,
                           shape: RoundedRectangleBorder(
                             borderRadius: BorderRadius.circular(5),
                           ),
                         ),
                         child: _isLoading
-                            ? const SizedBox(
+                            ? SizedBox(
                                 width: 20,
                                 height: 20,
                                 child: CircularProgressIndicator(
-                                  color: Colors.white,
+                                  color: colorScheme.onPrimary,
                                   strokeWidth: 2,
                                 ),
                               )
-                            : const Row(
+                            : Row(
                                 mainAxisAlignment: MainAxisAlignment.center,
                                 children: [
                                   Text(
                                     'Entrar',
-                                    style: TextStyle(color: Colors.white),
+                                    style: TextStyle(
+                                      color: colorScheme.onPrimary,
+                                    ),
                                   ),
                                   SizedBox(width: 8),
-                                  Icon(Icons.login, color: Colors.white),
+                                  Icon(
+                                    Icons.login,
+                                    color: colorScheme.onPrimary,
+                                  ),
                                 ],
                               ),
                       ),
@@ -210,12 +218,13 @@ class _LoginPageState extends State<LoginPage> {
 
                 const SizedBox(height: 20),
 
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
+                Wrap(
+                  alignment: WrapAlignment.center,
+                  crossAxisAlignment: WrapCrossAlignment.center,
                   children: [
-                    const Text(
+                    Text(
                       'Não tem uma conta?',
-                      style: TextStyle(color: Colors.white),
+                      style: TextStyle(color: colorScheme.onSurface),
                     ),
 
                     TextButton(

@@ -1,10 +1,12 @@
+import 'package:conecta_mais/auth/auth_provider.dart';
 import 'package:conecta_mais/screens/models/evento.dart';
 import 'package:conecta_mais/widgets/evento_card.dart';
 import 'package:conecta_mais/providers/evento_provider.dart';
+import 'package:conecta_mais/screens/auth/login_page.dart';
 import 'package:conecta_mais/screens/pages/edit_event_page.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import 'package:firebase_auth/firebase_auth.dart';
+import 'package:firebase_auth/firebase_auth.dart' hide AuthProvider;
 import 'package:share_plus/share_plus.dart';
 import 'package:url_launcher/url_launcher.dart';
 
@@ -15,12 +17,19 @@ class DetailsEventPage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final isLoggedIn = context.watch<AuthProvider>().isLoggedIn;
+    final eventoAtual = context.select<EventoProvider, Evento>((provider) {
+      for (final item in provider.eventos) {
+        if (item.id == evento.id) return item;
+      }
+      return evento;
+    });
     final isOwner =
-        evento.ownerId != null &&
-        evento.ownerId == FirebaseAuth.instance.currentUser?.uid;
-    final valorIngressoFormatado = evento.valorIngresso == 0
+        eventoAtual.ownerId != null &&
+        eventoAtual.ownerId == FirebaseAuth.instance.currentUser?.uid;
+    final valorIngressoFormatado = eventoAtual.valorIngresso == 0
         ? 'Gratuito'
-        : 'R\$ ${evento.valorIngresso.toStringAsFixed(2).replaceAll('.', ',')}';
+        : 'R\$ ${eventoAtual.valorIngresso.toStringAsFixed(2).replaceAll('.', ',')}';
     return Scaffold(
       appBar: AppBar(
         title: const Text('Detalhes do evento'),
@@ -28,7 +37,7 @@ class DetailsEventPage extends StatelessWidget {
           IconButton(
             icon: const Icon(Icons.ios_share),
             tooltip: 'Enviar convite',
-            onPressed: () => _enviarConvite(context),
+            onPressed: () => _enviarConvite(context, eventoAtual),
           ),
           if (isOwner) ...[
             IconButton(
@@ -37,14 +46,14 @@ class DetailsEventPage extends StatelessWidget {
               onPressed: () => Navigator.push(
                 context,
                 MaterialPageRoute(
-                  builder: (_) => EditEventPage(evento: evento),
+                  builder: (_) => EditEventPage(evento: eventoAtual),
                 ),
               ),
             ),
             IconButton(
               icon: const Icon(Icons.delete_outline),
               tooltip: 'Excluir evento',
-              onPressed: () => _confirmarExclusao(context),
+              onPressed: () => _confirmarExclusao(context, eventoAtual),
             ),
           ],
         ],
@@ -56,7 +65,7 @@ class DetailsEventPage extends StatelessWidget {
             SizedBox(
               width: double.infinity,
               height: 260,
-              child: EventImage(url: evento.imagemEvento),
+              child: EventImage(url: eventoAtual.imagemEvento),
             ),
             Padding(
               padding: const EdgeInsets.all(20),
@@ -64,30 +73,37 @@ class DetailsEventPage extends StatelessWidget {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    evento.nomeEvento,
+                    eventoAtual.nomeEvento,
                     style: Theme.of(context).textTheme.headlineSmall
                         ?.copyWith(fontWeight: FontWeight.bold),
                   ),
+                  if (eventoAtual.isPrivate) ...[
+                    const SizedBox(height: 8),
+                    const Chip(
+                      avatar: Icon(Icons.lock_outline, size: 18),
+                      label: Text('Evento privado'),
+                    ),
+                  ],
                   const SizedBox(height: 16),
                   _InfoLine(
                     icon: Icons.calendar_month,
-                    text: evento.dataHoraFormatada,
+                    text: eventoAtual.dataHoraFormatada,
                   ),
                   const SizedBox(height: 10),
                   _InfoLine(
                     icon: Icons.location_on_outlined,
-                    text: evento.localEvento,
+                    text: eventoAtual.localEvento,
                   ),
-                  if (evento.enderecoEvento.trim().isNotEmpty) ...[
+                  if (eventoAtual.enderecoEvento.trim().isNotEmpty) ...[
                     const SizedBox(height: 10),
                     _InfoLine(
                       icon: Icons.pin_drop_outlined,
-                      text: evento.enderecoEvento,
+                      text: eventoAtual.enderecoEvento,
                     ),
                     Align(
                       alignment: Alignment.centerLeft,
                       child: TextButton.icon(
-                        onPressed: () => _verNoMapa(context),
+                        onPressed: () => _verNoMapa(context, eventoAtual),
                         icon: const Icon(Icons.map_outlined),
                         label: const Text('Ver no mapa'),
                       ),
@@ -96,7 +112,7 @@ class DetailsEventPage extends StatelessWidget {
                   const SizedBox(height: 10),
                   _InfoLine(
                     icon: Icons.category_outlined,
-                    text: evento.tipoEvento,
+                    text: eventoAtual.tipoEvento,
                   ),
                   const SizedBox(height: 10),
                   _InfoLine(
@@ -106,9 +122,9 @@ class DetailsEventPage extends StatelessWidget {
                   const SizedBox(height: 10),
                   _InfoLine(
                     icon: Icons.people_outline,
-                    text: evento.vagasTotal == null
+                    text: eventoAtual.vagasTotal == null
                         ? 'Vagas não informadas'
-                        : '${evento.vagasRestantes} de ${evento.vagasTotal} vagas disponíveis',
+                        : '${eventoAtual.vagasRestantes} de ${eventoAtual.vagasTotal} vagas disponíveis',
                   ),
                   const SizedBox(height: 24),
                   Text(
@@ -117,16 +133,25 @@ class DetailsEventPage extends StatelessWidget {
                         ?.copyWith(fontWeight: FontWeight.bold),
                   ),
                   const SizedBox(height: 8),
-                  Text(evento.descricaoEvento),
+                  Text(eventoAtual.descricaoEvento),
                   const SizedBox(height: 28),
                   SizedBox(
                     width: double.infinity,
                     child: ElevatedButton.icon(
-                      onPressed: !isOwner && evento.temVagas
+                      onPressed: !isOwner && eventoAtual.temVagas
                           ? () async {
+                              if (!isLoggedIn) {
+                                await Navigator.push(
+                                  context,
+                                  MaterialPageRoute(
+                                    builder: (_) => const LoginPage(),
+                                  ),
+                                );
+                                return;
+                              }
                               final mensagem = await context
                                   .read<EventoProvider>()
-                                  .participarDoEvento(evento);
+                                  .participarDoEvento(eventoAtual);
                               if (!context.mounted) return;
                               ScaffoldMessenger.of(context).showSnackBar(
                                 SnackBar(
@@ -144,7 +169,9 @@ class DetailsEventPage extends StatelessWidget {
                       label: Text(
                         isOwner
                             ? 'Você criou este evento'
-                            : evento.temVagas
+                            : !isLoggedIn
+                            ? 'Entrar para se inscrever'
+                            : eventoAtual.temVagas
                             ? 'Participar do evento'
                             : 'Vagas esgotadas',
                       ),
@@ -159,8 +186,8 @@ class DetailsEventPage extends StatelessWidget {
     );
   }
 
-  Future<void> _verNoMapa(BuildContext context) async {
-    final query = Uri.encodeComponent(evento.enderecoEvento);
+  Future<void> _verNoMapa(BuildContext context, Evento eventoAtual) async {
+    final query = Uri.encodeComponent(eventoAtual.enderecoEvento);
     final uri = Uri.parse(
       'https://www.google.com/maps/search/?api=1&query=$query',
     );
@@ -172,25 +199,30 @@ class DetailsEventPage extends StatelessWidget {
     }
   }
 
-  Future<void> _enviarConvite(BuildContext context) async {
-    final ingresso = evento.valorIngresso == 0
+  Future<void> _enviarConvite(BuildContext context, Evento eventoAtual) async {
+    final ingresso = eventoAtual.valorIngresso == 0
         ? 'Gratuito'
-        : 'R\$ ${evento.valorIngresso.toStringAsFixed(2).replaceAll('.', ',')}';
+        : 'R\$ ${eventoAtual.valorIngresso.toStringAsFixed(2).replaceAll('.', ',')}';
     final convite = [
-      'Você está convidado para ${evento.nomeEvento}!',
-      'Data: ${evento.dataHoraFormatada}',
-      'Local: ${evento.localEvento}',
-      if (evento.enderecoEvento.trim().isNotEmpty)
-        'Endereço: ${evento.enderecoEvento}',
+      'Você está convidado para ${eventoAtual.nomeEvento}!',
+      'Data: ${eventoAtual.dataHoraFormatada}',
+      'Local: ${eventoAtual.localEvento}',
+      if (eventoAtual.enderecoEvento.trim().isNotEmpty)
+        'Endereço: ${eventoAtual.enderecoEvento}',
       'Ingresso: $ingresso',
+      if (eventoAtual.isPrivate && eventoAtual.linkCompartilhamento != null)
+        'Acesse e inscreva-se pelo link: ${eventoAtual.linkCompartilhamento}',
     ].join('\n');
 
     await SharePlus.instance.share(
-      ShareParams(text: convite, subject: 'Convite: ${evento.nomeEvento}'),
+      ShareParams(text: convite, subject: 'Convite: ${eventoAtual.nomeEvento}'),
     );
   }
 
-  Future<void> _confirmarExclusao(BuildContext context) async {
+  Future<void> _confirmarExclusao(
+    BuildContext context,
+    Evento eventoAtual,
+  ) async {
     final confirmar = await showDialog<bool>(
       context: context,
       builder: (dialogContext) => AlertDialog(
@@ -209,7 +241,9 @@ class DetailsEventPage extends StatelessWidget {
       ),
     );
     if (confirmar != true || !context.mounted) return;
-    final erro = await context.read<EventoProvider>().excluirEvento(evento);
+    final erro = await context.read<EventoProvider>().excluirEvento(
+      eventoAtual,
+    );
     if (!context.mounted) return;
     if (erro != null) {
       ScaffoldMessenger.of(context).showSnackBar(

@@ -1,4 +1,3 @@
-
 import 'package:conecta_mais/auth/auth_provider.dart';
 import 'package:conecta_mais/screens/auth/login_page.dart';
 import 'package:flutter/gestures.dart';
@@ -28,11 +27,6 @@ class _RegisterPageState extends State<RegisterPage> {
   bool _isPasswordVisible = false;
   bool _isConfirmPasswordVisible = false;
   bool _acceptedTerms = false;
-
-  static const Color _backgroundColor = Color(0xFF060226);
-  static const Color _cardColor = Color(0xFF130B24);
-  static const Color _primaryColor = Color(0xFF9E77ED);
-  static const Color _selectedColor = Color(0xFF633BBC);
 
   @override
   void dispose() {
@@ -105,9 +99,7 @@ class _RegisterPageState extends State<RegisterPage> {
     }
 
     if (!_acceptedTerms) {
-      _showMessage(
-        'Você deve aceitar os termos e a política de privacidade.',
-      );
+      _showMessage('Você deve aceitar os termos e a política de privacidade.');
       return;
     }
 
@@ -126,10 +118,7 @@ class _RegisterPageState extends State<RegisterPage> {
       if (!mounted) return;
 
       if (result == null) {
-        _showMessage(
-          'Conta criada com sucesso!',
-          isSuccess: true,
-        );
+        _showMessage('Conta criada com sucesso!', isSuccess: true);
 
         Navigator.of(context).popUntil((route) => route.isFirst);
       } else {
@@ -138,9 +127,7 @@ class _RegisterPageState extends State<RegisterPage> {
     } catch (e) {
       if (!mounted) return;
 
-      _showMessage(
-        'Não foi possível criar sua conta. Tente novamente.',
-      );
+      _showMessage('Não foi possível criar sua conta. Tente novamente.');
     } finally {
       if (mounted) {
         setState(() => _isLoading = false);
@@ -154,7 +141,9 @@ class _RegisterPageState extends State<RegisterPage> {
       ..showSnackBar(
         SnackBar(
           content: Text(message),
-          backgroundColor: isSuccess ? Colors.green.shade700 : Colors.red.shade700,
+          backgroundColor: isSuccess
+              ? Colors.green.shade700
+              : Colors.red.shade700,
           behavior: SnackBarBehavior.floating,
         ),
       );
@@ -165,28 +154,28 @@ class _RegisterPageState extends State<RegisterPage> {
     required IconData icon,
     Widget? suffixIcon,
   }) {
+    final colorScheme = Theme.of(context).colorScheme;
     return InputDecoration(
       hintText: hint,
-      hintStyle: const TextStyle(color: Colors.white38),
-      prefixIcon: Icon(icon, color: _primaryColor),
+      hintStyle: TextStyle(color: colorScheme.onSurfaceVariant),
+      prefixIcon: Icon(icon, color: colorScheme.primary),
       suffixIcon: suffixIcon,
       filled: true,
-      fillColor: _cardColor,
-      contentPadding: const EdgeInsets.symmetric(
-        horizontal: 16,
-        vertical: 17,
-      ),
+      fillColor: colorScheme.surfaceContainerHighest,
+      contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 17),
       border: OutlineInputBorder(
         borderRadius: BorderRadius.circular(10),
         borderSide: BorderSide.none,
       ),
       enabledBorder: OutlineInputBorder(
         borderRadius: BorderRadius.circular(10),
-        borderSide: BorderSide(color: Colors.white.withValues(alpha: 0.08)),
+        borderSide: BorderSide(
+          color: colorScheme.outline.withValues(alpha: 0.3),
+        ),
       ),
       focusedBorder: OutlineInputBorder(
         borderRadius: BorderRadius.circular(10),
-        borderSide: const BorderSide(color: _primaryColor, width: 1.5),
+        borderSide: BorderSide(color: colorScheme.primary, width: 1.5),
       ),
       errorBorder: OutlineInputBorder(
         borderRadius: BorderRadius.circular(10),
@@ -200,12 +189,13 @@ class _RegisterPageState extends State<RegisterPage> {
   }
 
   Widget _buildLabel(String text) {
+    final colorScheme = Theme.of(context).colorScheme;
     return Padding(
       padding: const EdgeInsets.only(bottom: 8),
       child: Text(
         text,
-        style: const TextStyle(
-          color: Colors.white,
+        style: TextStyle(
+          color: colorScheme.onSurface,
           fontSize: 14,
           fontWeight: FontWeight.w600,
         ),
@@ -219,6 +209,7 @@ class _RegisterPageState extends State<RegisterPage> {
     required String title,
     required String subtitle,
   }) {
+    final colorScheme = Theme.of(context).colorScheme;
     final selected = _selectedAccountType == type;
 
     return Expanded(
@@ -229,27 +220,28 @@ class _RegisterPageState extends State<RegisterPage> {
         borderRadius: BorderRadius.circular(12),
         child: AnimatedContainer(
           duration: const Duration(milliseconds: 180),
-          padding: const EdgeInsets.symmetric(
-            horizontal: 10,
-            vertical: 18,
-          ),
+          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 18),
           decoration: BoxDecoration(
-            color: selected ? const Color(0xFF1E1435) : _cardColor,
+            color: selected
+                ? colorScheme.primaryContainer
+                : colorScheme.surfaceContainerHighest,
             borderRadius: BorderRadius.circular(12),
             border: Border.all(
-              color: selected ? _selectedColor : Colors.white12,
+              color: selected
+                  ? colorScheme.primary
+                  : colorScheme.outlineVariant,
               width: selected ? 2 : 1,
             ),
           ),
           child: Column(
             children: [
-              Icon(icon, color: _primaryColor, size: 28),
+              Icon(icon, color: colorScheme.primary, size: 28),
               const SizedBox(height: 10),
               Text(
                 title,
                 textAlign: TextAlign.center,
                 style: TextStyle(
-                  color: selected ? Colors.white : Colors.white70,
+                  color: colorScheme.onSurface,
                   fontWeight: FontWeight.bold,
                   fontSize: 13,
                 ),
@@ -258,8 +250,8 @@ class _RegisterPageState extends State<RegisterPage> {
               Text(
                 subtitle,
                 textAlign: TextAlign.center,
-                style: const TextStyle(
-                  color: Colors.white54,
+                style: TextStyle(
+                  color: colorScheme.onSurfaceVariant,
                   fontSize: 11,
                 ),
               ),
@@ -272,15 +264,12 @@ class _RegisterPageState extends State<RegisterPage> {
 
   @override
   Widget build(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
     return Scaffold(
-      backgroundColor: _backgroundColor,
       body: SafeArea(
         child: Center(
           child: SingleChildScrollView(
-            padding: const EdgeInsets.symmetric(
-              horizontal: 28,
-              vertical: 24,
-            ),
+            padding: const EdgeInsets.symmetric(horizontal: 28, vertical: 24),
             child: ConstrainedBox(
               constraints: const BoxConstraints(maxWidth: 480),
               child: Form(
@@ -288,37 +277,37 @@ class _RegisterPageState extends State<RegisterPage> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    const Row(
+                    Row(
                       children: [
                         Icon(
                           Icons.calendar_month,
                           size: 38,
-                          color: Colors.white,
+                          color: colorScheme.onSurface,
                         ),
                         SizedBox(width: 10),
                         Text(
                           'Conecta+',
                           style: TextStyle(
                             fontSize: 30,
-                            color: _primaryColor,
+                            color: colorScheme.primary,
                             fontWeight: FontWeight.bold,
                           ),
                         ),
                       ],
                     ),
                     const SizedBox(height: 32),
-                    const Text(
+                    Text(
                       'Criar sua conta',
                       style: TextStyle(
-                        color: Colors.white,
+                        color: colorScheme.onSurface,
                         fontSize: 26,
                         fontWeight: FontWeight.bold,
                       ),
                     ),
                     const SizedBox(height: 6),
-                    const Text(
+                    Text(
                       'Preencha os dados abaixo para começar.',
-                      style: TextStyle(color: Colors.white60),
+                      style: TextStyle(color: colorScheme.onSurfaceVariant),
                     ),
                     const SizedBox(height: 28),
 
@@ -328,7 +317,7 @@ class _RegisterPageState extends State<RegisterPage> {
                       keyboardType: TextInputType.name,
                       textCapitalization: TextCapitalization.words,
                       autofillHints: const [AutofillHints.name],
-                      style: const TextStyle(color: Colors.white),
+                      style: TextStyle(color: colorScheme.onSurface),
                       decoration: _inputDecoration(
                         hint: 'João Silva',
                         icon: Icons.person_outline,
@@ -364,7 +353,7 @@ class _RegisterPageState extends State<RegisterPage> {
                       keyboardType: TextInputType.emailAddress,
                       autofillHints: const [AutofillHints.email],
                       autocorrect: false,
-                      style: const TextStyle(color: Colors.white),
+                      style: TextStyle(color: colorScheme.onSurface),
                       decoration: _inputDecoration(
                         hint: 'seuemail@exemplo.com',
                         icon: Icons.email_outlined,
@@ -378,7 +367,7 @@ class _RegisterPageState extends State<RegisterPage> {
                       controller: _passwordController,
                       obscureText: !_isPasswordVisible,
                       autofillHints: const [AutofillHints.newPassword],
-                      style: const TextStyle(color: Colors.white),
+                      style: TextStyle(color: colorScheme.onSurface),
                       decoration: _inputDecoration(
                         hint: 'Mínimo de 6 caracteres',
                         icon: Icons.lock_outline,
@@ -392,7 +381,7 @@ class _RegisterPageState extends State<RegisterPage> {
                             _isPasswordVisible
                                 ? Icons.visibility_off
                                 : Icons.visibility,
-                            color: Colors.white54,
+                            color: colorScheme.onSurfaceVariant,
                           ),
                         ),
                       ),
@@ -404,7 +393,7 @@ class _RegisterPageState extends State<RegisterPage> {
                     TextFormField(
                       controller: _confirmPasswordController,
                       obscureText: !_isConfirmPasswordVisible,
-                      style: const TextStyle(color: Colors.white),
+                      style: TextStyle(color: colorScheme.onSurface),
                       decoration: _inputDecoration(
                         hint: 'Digite a senha novamente',
                         icon: Icons.lock_outline,
@@ -419,7 +408,7 @@ class _RegisterPageState extends State<RegisterPage> {
                             _isConfirmPasswordVisible
                                 ? Icons.visibility_off
                                 : Icons.visibility,
-                            color: Colors.white54,
+                            color: colorScheme.onSurfaceVariant,
                           ),
                         ),
                       ),
@@ -432,7 +421,7 @@ class _RegisterPageState extends State<RegisterPage> {
                       children: [
                         Checkbox(
                           value: _acceptedTerms,
-                          activeColor: _selectedColor,
+                          activeColor: colorScheme.primary,
                           onChanged: (value) {
                             setState(() {
                               _acceptedTerms = value ?? false;
@@ -444,16 +433,16 @@ class _RegisterPageState extends State<RegisterPage> {
                             padding: const EdgeInsets.only(top: 12),
                             child: Text.rich(
                               TextSpan(
-                                style: const TextStyle(
-                                  color: Colors.white70,
+                                style: TextStyle(
+                                  color: colorScheme.onSurfaceVariant,
                                   fontSize: 13,
                                 ),
                                 children: [
                                   const TextSpan(text: 'Eu aceito os '),
                                   TextSpan(
                                     text: 'termos e a política de privacidade',
-                                    style: const TextStyle(
-                                      color: _primaryColor,
+                                    style: TextStyle(
+                                      color: colorScheme.primary,
                                       fontWeight: FontWeight.bold,
                                     ),
                                     recognizer: TapGestureRecognizer()
@@ -479,30 +468,28 @@ class _RegisterPageState extends State<RegisterPage> {
                       child: ElevatedButton(
                         onPressed: _isLoading ? null : _handleRegister,
                         style: ElevatedButton.styleFrom(
-                          backgroundColor: _selectedColor,
-                          disabledBackgroundColor: _selectedColor.withValues(
-                            alpha: 0.5,
-                          ),
+                          backgroundColor: colorScheme.primary,
+                          foregroundColor: colorScheme.onPrimary,
                           shape: RoundedRectangleBorder(
                             borderRadius: BorderRadius.circular(10),
                           ),
                         ),
                         child: _isLoading
-                            ? const SizedBox(
+                            ? SizedBox(
                                 width: 22,
                                 height: 22,
                                 child: CircularProgressIndicator(
-                                  color: Colors.white,
+                                  color: colorScheme.onPrimary,
                                   strokeWidth: 2,
                                 ),
                               )
-                            : const Row(
+                            : Row(
                                 mainAxisAlignment: MainAxisAlignment.center,
                                 children: [
                                   Text(
                                     'Criar conta',
                                     style: TextStyle(
-                                      color: Colors.white,
+                                      color: colorScheme.onPrimary,
                                       fontWeight: FontWeight.bold,
                                       fontSize: 15,
                                     ),
@@ -510,7 +497,7 @@ class _RegisterPageState extends State<RegisterPage> {
                                   SizedBox(width: 8),
                                   Icon(
                                     Icons.arrow_forward,
-                                    color: Colors.white,
+                                    color: colorScheme.onPrimary,
                                   ),
                                 ],
                               ),
@@ -523,9 +510,11 @@ class _RegisterPageState extends State<RegisterPage> {
                         alignment: WrapAlignment.center,
                         crossAxisAlignment: WrapCrossAlignment.center,
                         children: [
-                          const Text(
+                          Text(
                             'Já tem uma conta?',
-                            style: TextStyle(color: Colors.white70),
+                            style: TextStyle(
+                              color: colorScheme.onSurfaceVariant,
+                            ),
                           ),
                           TextButton(
                             onPressed: _isLoading
@@ -538,10 +527,10 @@ class _RegisterPageState extends State<RegisterPage> {
                                       ),
                                     );
                                   },
-                            child: const Text(
+                            child: Text(
                               'Entrar',
                               style: TextStyle(
-                                color: _primaryColor,
+                                color: colorScheme.primary,
                                 fontWeight: FontWeight.bold,
                               ),
                             ),

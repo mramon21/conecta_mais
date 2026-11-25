@@ -12,6 +12,9 @@ class Evento {
     this.enderecoEvento = '',
     this.id,
     this.ownerId,
+    this.isPrivate = false,
+    this.latitude,
+    this.longitude,
     this.imagemEvento,
     this.vagasTotal,
     this.vagasOcupadasCount = 0,
@@ -19,6 +22,7 @@ class Evento {
 
   final String? id;
   final String? ownerId;
+  final bool isPrivate;
   final String nomeEvento;
   final String descricaoEvento;
   final DateTime dataHoraEvento;
@@ -26,6 +30,8 @@ class Evento {
   final double valorIngresso;
   final String tipoEvento;
   final String enderecoEvento;
+  final double? latitude;
+  final double? longitude;
   final String? imagemEvento;
   final int? vagasTotal;
   final int vagasOcupadasCount;
@@ -51,6 +57,22 @@ class Evento {
   int? get vagasRestantes =>
       vagasTotal == null ? null : vagasTotal! - vagasOcupadas;
   bool get temVagas => vagasTotal == null || vagasOcupadas < vagasTotal!;
+  String? get linkCompartilhamento => id == null
+      ? null
+      : Uri(
+          scheme: 'conecta-mais',
+          host: 'app',
+          pathSegments: ['eventos', id!],
+        ).toString();
+  bool get temCoordenadas =>
+      latitude != null &&
+      longitude != null &&
+      latitude!.isFinite &&
+      longitude!.isFinite &&
+      latitude! >= -90 &&
+      latitude! <= 90 &&
+      longitude! >= -180 &&
+      longitude! <= 180;
 
   Map<String, dynamic> toJson() => {
     'nomeEvento': nomeEvento,
@@ -60,10 +82,13 @@ class Evento {
     'valorIngresso': valorIngresso,
     'tipoEvento': tipoEvento,
     'enderecoEvento': enderecoEvento,
+    'latitude': latitude,
+    'longitude': longitude,
     'imagemEvento': imagemEvento,
     'vagasTotal': vagasTotal,
     'vagasOcupadas': vagasOcupadas,
     'ownerId': ownerId,
+    'isPrivate': isPrivate,
   };
 
   factory Evento.fromJson(Map<String, dynamic> json, {String? id}) {
@@ -80,6 +105,7 @@ class Evento {
     return Evento(
       id: id,
       ownerId: json['ownerId'] as String?,
+      isPrivate: json['isPrivate'] as bool? ?? false,
       nomeEvento: json['nomeEvento'] as String? ?? '',
       descricaoEvento: json['descricaoEvento'] as String? ?? '',
       dataHoraEvento: dataHoraEvento,
@@ -87,6 +113,8 @@ class Evento {
       valorIngresso: (json['valorIngresso'] as num?)?.toDouble() ?? 0,
       tipoEvento: json['tipoEvento'] as String? ?? '',
       enderecoEvento: json['enderecoEvento'] as String? ?? '',
+      latitude: (json['latitude'] as num?)?.toDouble(),
+      longitude: (json['longitude'] as num?)?.toDouble(),
       imagemEvento: json['imagemEvento'] as String?,
       vagasTotal: (json['vagasTotal'] as num?)?.toInt(),
       vagasOcupadasCount: vagasOcupadas,

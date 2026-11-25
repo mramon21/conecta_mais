@@ -16,6 +16,8 @@ class EventoProvider extends ChangeNotifier {
   String? _error;
 
   List<Evento> get eventos => List.unmodifiable(_eventos);
+  List<Evento> get eventosPublicos =>
+      _eventos.where((evento) => !evento.isPrivate).toList();
   bool get isLoading => _isLoading;
   String? get error => _error;
 
@@ -54,7 +56,7 @@ class EventoProvider extends ChangeNotifier {
 
   void retry() => _startListening();
 
-  List<Evento> get eventosAtivos => _eventos
+  List<Evento> get eventosAtivos => eventosPublicos
       .where((evento) => evento.dataHoraEvento.isAfter(DateTime.now()))
       .toList();
 
@@ -112,6 +114,26 @@ class EventoProvider extends ChangeNotifier {
       ..sort((a, b) => a.dataHoraEvento.compareTo(b.dataHoraEvento));
   }
 
+  Future<List<Evento>> buscarEventosCriados() async {
+    final uid = FirebaseAuth.instance.currentUser?.uid;
+    if (uid == null) return const [];
+
+    final documentos = await _firestore
+        .collection('eventos')
+        .where('ownerId', isEqualTo: uid)
+        .get();
+    return documentos.docs
+        .map((documento) => Evento.fromJson(documento.data(), id: documento.id))
+        .toList()
+      ..sort((a, b) => a.dataHoraEvento.compareTo(b.dataHoraEvento));
+  }
+
+  Future<Evento?> buscarEventoPorId(String id) async {
+    final documento = await _firestore.collection('eventos').doc(id).get();
+    if (!documento.exists) return null;
+    return Evento.fromJson(documento.data()!, id: documento.id);
+  }
+
   Future<String> uploadImagem(
     Uint8List imageBytes, {
     String? contentType,
@@ -147,6 +169,7 @@ class EventoProvider extends ChangeNotifier {
           .collection('eventos')
           .doc(evento.id)
           .update(evento.toJson());
+      _substituirEvento(evento);
       return null;
     } catch (_) {
       return 'Não foi possível atualizar o evento.';
@@ -184,6 +207,7 @@ class EventoProvider extends ChangeNotifier {
     if (evento.id == null) return 'Evento indisponível.';
 
     try {
+      var vagasOcupadasAtualizadas = evento.vagasOcupadas;
       await _firestore.runTransaction((transaction) async {
         final reference = _firestore.collection('eventos').doc(evento.id);
         final snapshot = await transaction.get(reference);
@@ -212,9 +236,33 @@ class EventoProvider extends ChangeNotifier {
         if (vagas != null && inscritos >= vagas) {
           throw StateError('Todas as vagas foram preenchidas.');
         }
-        transaction.update(reference, {'vagasOcupadas': inscritos + 1});
+        vagasOcupadasAtualizadas = inscritos + 1;
+        transaction.update(reference, {
+          'vagasOcupadas': vagasOcupadasAtualizadas,
+        });
         transaction.set(participantRef, {'uid': uid});
       });
+      final index = _eventos.indexWhere((item) => item.id == evento.id);
+      final eventoAtual = index == -1 ? evento : _eventos[index];
+      _substituirEvento(
+        Evento(
+          id: eventoAtual.id,
+          ownerId: eventoAtual.ownerId,
+          isPrivate: eventoAtual.isPrivate,
+          nomeEvento: eventoAtual.nomeEvento,
+          descricaoEvento: eventoAtual.descricaoEvento,
+          dataHoraEvento: eventoAtual.dataHoraEvento,
+          localEvento: eventoAtual.localEvento,
+          valorIngresso: eventoAtual.valorIngresso,
+          tipoEvento: eventoAtual.tipoEvento,
+          enderecoEvento: eventoAtual.enderecoEvento,
+          latitude: eventoAtual.latitude,
+          longitude: eventoAtual.longitude,
+          imagemEvento: eventoAtual.imagemEvento,
+          vagasTotal: eventoAtual.vagasTotal,
+          vagasOcupadasCount: vagasOcupadasAtualizadas,
+        ),
+      );
       return null;
     } on StateError catch (error) {
       return error.message.toString();
@@ -227,6 +275,13 @@ class EventoProvider extends ChangeNotifier {
     } catch (_) {
       return 'Não foi possível registrar sua participação.';
     }
+  }
+
+  void _substituirEvento(Evento evento) {
+    final index = _eventos.indexWhere((item) => item.id == evento.id);
+    if (index == -1) return;
+    _eventos[index] = evento;
+    notifyListeners();
   }
 
   @override

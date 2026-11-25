@@ -6,7 +6,11 @@ enum EventCategory {
   arte('Arte'),
   tecnologia('Tecnologia'),
   entretenimento('Entretenimento'),
-  bemEstar('Bem-estar');
+  bemEstar('Bem-estar'),
+  negocios('Negócios e networking'),
+  infantilFamilia('Infantil e família'),
+  culturaComunidade('Cultura e comunidade'),
+  naturezaAventura('Natureza e aventura');
 
   final String label;
   const EventCategory(this.label);

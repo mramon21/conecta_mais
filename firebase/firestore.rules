@@ -38,12 +38,19 @@ service cloud.firestore {
         && request.resource.data.ownerId == request.auth.uid
         && request.resource.data.keys().hasOnly([
           'nomeEvento', 'descricaoEvento', 'dataHoraEvento', 'localEvento',
-          'enderecoEvento',
+          'enderecoEvento', 'latitude', 'longitude',
           'valorIngresso', 'tipoEvento', 'imagemEvento', 'vagasTotal',
-          'vagasOcupadas', 'ownerId'
+          'vagasOcupadas', 'ownerId', 'isPrivate'
         ])
+        && request.resource.data.get('isPrivate', false) is bool
         && request.resource.data.dataHoraEvento is timestamp
         && request.resource.data.dataHoraEvento > request.time
+        && request.resource.data.latitude is number
+        && request.resource.data.latitude >= -90
+        && request.resource.data.latitude <= 90
+        && request.resource.data.longitude is number
+        && request.resource.data.longitude >= -180
+        && request.resource.data.longitude <= 180
         && request.resource.data.valorIngresso >= 0
         && (request.resource.data.vagasTotal == null
           || request.resource.data.vagasTotal > 0)
@@ -53,6 +60,12 @@ service cloud.firestore {
           && request.resource.data.ownerId == resource.data.ownerId
           && request.resource.data.dataHoraEvento is timestamp
           && request.resource.data.dataHoraEvento > request.time
+          && request.resource.data.latitude is number
+          && request.resource.data.latitude >= -90
+          && request.resource.data.latitude <= 90
+          && request.resource.data.longitude is number
+          && request.resource.data.longitude >= -180
+          && request.resource.data.longitude <= 180
           && request.resource.data.valorIngresso >= 0
           && (request.resource.data.vagasTotal == null
             || (request.resource.data.vagasTotal > 0
@@ -60,7 +73,7 @@ service cloud.firestore {
           && request.resource.data.diff(resource.data).affectedKeys()
             .hasOnly(['nomeEvento', 'descricaoEvento', 'dataHoraEvento',
               'localEvento', 'enderecoEvento', 'valorIngresso', 'tipoEvento', 'imagemEvento',
-              'vagasTotal']))
+              'vagasTotal', 'latitude', 'longitude', 'isPrivate']))
         ||
         (request.resource.data.diff(resource.data).affectedKeys()
             .hasOnly(['vagasOcupadas'])

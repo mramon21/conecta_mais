@@ -23,6 +23,10 @@ O perfil permite atualizar o nome e a foto. O botão “Enviar convite” nos
 detalhes abre o compartilhamento do dispositivo com nome, data, local e preço
 do evento. E-mails são alterados após confirmação pelo link enviado pelo
 Firebase Auth. Eventos também têm endereço e link para abrir o Google Maps.
+Organizadores podem consultar seus eventos criados em abas separadas para
+eventos públicos e privados. Eventos privados não aparecem na descoberta e
+podem ser compartilhados pelo link `conecta-mais://app/eventos/<id>`, que abre
+os detalhes e a inscrição no aplicativo Android.
 
 ## Migrar eventos existentes
 
